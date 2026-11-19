@@ -4,7 +4,7 @@ Hinweise für Claude Code. Diese Datei liegt im Repo, damit sie auf jedem Mac gi
 
 ## Dokumente
 
-- **Zweck:** kleine Ablage für private und allgemeine Dokumente, die **nicht** zum Geschäft, zu den Geschäftszweigen oder zu den Finanzen gehören (die liegen im ERP-System). Bewusst minimal wie eine „Paperless lite“ – keine Texterkennung, keine Ordnerstruktur, keine Benutzerverwaltung.
+- **Zweck:** kleine Ablage für **allgemeine** Dokumente (keine privaten), die **nicht** zum Geschäft, zu den Geschäftszweigen oder zu den Finanzen gehören (die liegen im ERP-System). Bewusst minimal wie eine „Paperless lite“ – keine Texterkennung, keine Ordnerstruktur, keine Benutzerverwaltung.
 - **Aufbau:** reines HTML/CSS/JS ohne Build – `index.html`, `app.css`, `app.js`, `icon.svg`, Schriften lokal in `fonts/`. Läuft nur über das App-Portal (Kachel „Dokumente“, Ordner `dokumente`).
 - **Speicher (Portal):** Angaben in `/api/kv/dokumente/docs/<id>` (Titel, Datum, Absender, Schlagwörter, Notiz, Datei-Infos, `inbox`), Dateien in `/api/blob/dokumente/<id>` (höchstens 20 MB, Original unverändert). Die Dokument-ID ist die Datei-ID. Auf dem Server: `dokumente/data/db/docs.json` und `dokumente/data/blobs/`; im Container `/data/dokumente` (Datenordner auf dem NAS, mit Hyper Backup sichern). `data/` ist nicht im Git.
 - **Bedienung:** Hochladen per Knopf oder Ziehen ins Fenster → landet im **Eingang**; „Speichern & aus Eingang“ ordnet es ein. Suche über alle Angaben und den Dateinamen (Taste `/`), Filter nach Schlagwort, Absender, Jahr; Vorschau für PDF, Bilder, Text.
@@ -20,7 +20,7 @@ Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac d
 - `portal` – App-Portal und Perl-Server, liefert ERP-System, Gründungskonzept und Dokumente aus (die Website ist dort nur ein Weblink); Docker-Image für das NAS
 - `gruendung` – Gründungskonzept (eine HTML-Seite)
 - `website` – Landingpage www.balandurb.de (HTML/CSS, Hosting bei Strato, Vorschau `python3 -m http.server 8091 --bind 127.0.0.1` im Ordner)
-- `dokumente` – kleine Dokumentenablage für private und allgemeine Dokumente (ähnlich Paperless, minimal); Dateien und Angaben im Portal-Speicher (`/api/blob`, `/api/kv`)
+- `dokumente` – kleine Dokumentenablage für allgemeine Dokumente (ähnlich Paperless, minimal); Dateien und Angaben im Portal-Speicher (`/api/blob`, `/api/kv`)
 
 **Offene Erinnerungen** (beim Start einer Sitzung ansprechen, bis erledigt – dann hier löschen)
 - **Anderer Mac auf Token umstellen** (eingetragen 19.11.2026): Der zweite Mac meldet sich bei GitHub bisher über die Browser-Anmeldung von `gh` an. Er soll – wie dieser Mac – ein **Fine-grained Personal Access Token** nutzen: nur die fünf Repos (`erp-system`, `portal`, `gruendung`, `website`, `dokumente`), Rechte „Contents: Read and write“, im macOS-Schlüsselbund gespeichert. Den Token erstellt und gibt der Nutzer selbst ein. Danach `gh auth logout` bzw. die alte Anmeldung entfernen und mit `git pull`/`git push` in allen fünf Repos prüfen.
