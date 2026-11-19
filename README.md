@@ -1,6 +1,6 @@
 # Dokumente
 
-Kleine Dokumentenablage für private und allgemeine Dokumente – getrennt von der Management-App (Geschäft und Finanzen). Bewusst minimal, ähnlich einer „Paperless lite“.
+Kleine Dokumentenablage für private und allgemeine Dokumente – getrennt vom ERP-System (Geschäft und Finanzen). Bewusst minimal, ähnlich einer „Paperless lite“.
 
 - Hochladen per Knopf oder Dateien ins Fenster ziehen (PDF, Bilder, sonstige Dateien bis 20 MB); neue Dokumente landen im **Eingang**
 - Angaben: Titel, Datum, Absender, Schlagwörter, Notiz
