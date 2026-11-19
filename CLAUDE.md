@@ -16,14 +16,16 @@ Hinweise für Claude Code. Diese Datei liegt im Repo, damit sie auf jedem Mac gi
 **Projekt:** BALANDURB – Einzelunternehmen als Kleinunternehmer (§ 19 UStG), Gewerbebeginn 01.01.2027, nebenberuflich, dauerhaft keine GmbH (daher EÜR, keine Bilanz). Geschäftszweige = Business Units. Bis 17.11.2026 hieß das Unternehmen BiaMar.
 
 Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac derselbe Pfad):
-- `management-app` – **ERP-System** (bis 19.11.2026 „Management-App“): Verkauf, Einkauf, Finanzen, EÜR, DATEV …, Browser-App mit SQLite (sql.js). Ordner, Repo und technische Kennungen heißen weiter `management-app`
+- `erp-system` – **ERP-System** (bis 19.11.2026 „Management-App“, Ordner/Repo `management-app`): Verkauf, Einkauf, Finanzen, EÜR, DATEV …, Browser-App mit SQLite (sql.js); Adresse im Portal `/erp-system/`
 - `portal` – App-Portal und Perl-Server, liefert ERP-System, Gründungskonzept und Dokumente aus (die Website ist dort nur ein Weblink); Docker-Image für das NAS
 - `gruendung` – Gründungskonzept (eine HTML-Seite)
 - `website` – Landingpage www.balandurb.de (HTML/CSS, Hosting bei Strato, Vorschau `python3 -m http.server 8091 --bind 127.0.0.1` im Ordner)
 - `dokumente` – kleine Dokumentenablage für private und allgemeine Dokumente (ähnlich Paperless, minimal); Dateien und Angaben im Portal-Speicher (`/api/blob`, `/api/kv`)
 
 **Offene Erinnerungen** (beim Start einer Sitzung ansprechen, bis erledigt – dann hier löschen)
-- **Anderer Mac auf Token umstellen** (eingetragen 19.11.2026): Der zweite Mac meldet sich bei GitHub bisher über die Browser-Anmeldung von `gh` an. Er soll – wie dieser Mac – ein **Fine-grained Personal Access Token** nutzen: nur die fünf Repos (`management-app`, `portal`, `gruendung`, `website`, `dokumente`), Rechte „Contents: Read and write“, im macOS-Schlüsselbund gespeichert. Den Token erstellt und gibt der Nutzer selbst ein. Danach `gh auth logout` bzw. die alte Anmeldung entfernen und mit `git pull`/`git push` in allen fünf Repos prüfen.
+- **Anderer Mac auf Token umstellen** (eingetragen 19.11.2026): Der zweite Mac meldet sich bei GitHub bisher über die Browser-Anmeldung von `gh` an. Er soll – wie dieser Mac – ein **Fine-grained Personal Access Token** nutzen: nur die fünf Repos (`erp-system`, `portal`, `gruendung`, `website`, `dokumente`), Rechte „Contents: Read and write“, im macOS-Schlüsselbund gespeichert. Den Token erstellt und gibt der Nutzer selbst ein. Danach `gh auth logout` bzw. die alte Anmeldung entfernen und mit `git pull`/`git push` in allen fünf Repos prüfen.
+
+- **Umbenennung ERP-System auf dem anderen Mac** (eingetragen 19.11.2026): Ordner `~/repository/management-app` in `~/repository/erp-system` umbenennen und dort `git remote set-url origin https://github.com/marcbalczynski/erp-system.git` ausführen; danach `git pull`. Den Fine-grained Token prüfen (Repo heißt jetzt `erp-system`).
 
 **Arbeitsweise**
 - Immer auf **Deutsch** antworten – auch Rückfragen, Zusammenfassungen und Statusmeldungen. Code-Kommentare und Commit-Nachrichten sind deutsch.
@@ -38,4 +40,4 @@ Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac d
 
 **NAS (Synology, Portainer):** Portal unter `http://10.10.20.229:8080` (macvlan-Netz `mvl`). Image/Container/Stack `balandurb-portal`, Datenordner `/volume1/docker/balandurb-portal`, MariaDB-Datenbank `balandurb`, Benutzer `balandurb_app@localhost` über den Socket `/run/mysqld/mysqld10.sock`. Die MariaDB ist für das ERP-System führend.
 - Update: `~/repository/portal/docker/build-context.sh` → `~/repository/docker-build/balandurb-portal-build.tar`; der Nutzer baut in Portainer das Image `balandurb-portal:latest` neu und erstellt den Container neu („Re-pull image“ aus).
-- Prüfen (das Portal hat keine Anmeldung): `curl -H "X-Portal: 1" http://10.10.20.229:8080/api/db/management-app/status` – ohne den Header `X-Portal: 1` lehnt das Portal API-Aufrufe ab.
+- Prüfen (das Portal hat keine Anmeldung): `curl -H "X-Portal: 1" http://10.10.20.229:8080/api/db/erp-system/status` – ohne den Header `X-Portal: 1` lehnt das Portal API-Aufrufe ab.
