@@ -253,7 +253,8 @@
           <div class="field"><label for="f-date">Datum</label><input id="f-date" name="date" type="date" value="${esc(d.date || '')}"></div>
           <div class="field"><label for="f-contact">Absender</label>
             <div class="with-btn"><input id="f-contact" name="contact" value="${esc(contactName(d))}" list="contact-list" placeholder="Kontakt wählen oder neuen Namen eingeben" autocomplete="off">
-              <button type="button" class="btn btn-sm" data-show-contact title="Kontakt öffnen"${d.contactId ? '' : ' hidden'}>Kontakt</button></div>
+              <button type="button" class="btn btn-sm" data-show-contact title="Kontakt öffnen"${d.contactId ? '' : ' hidden'}>Öffnen</button>
+              <button type="button" class="btn btn-sm" data-new-contact-doc title="Neuen Kontakt anlegen">+ Kontakt</button></div>
             <datalist id="contact-list">${names.map((c) => `<option value="${esc(c.name)}">${esc([c.person, c.city].filter(Boolean).join(' · '))}</option>`).join('')}</datalist>
             <div class="hint" data-contact-hint>${d.contactId ? '' : 'Ein neuer Name wird beim Speichern als Kontakt angelegt.'}</div></div>
           <div class="field"><label>Tags</label><div class="tag-pick" data-tag-pick></div>
@@ -276,6 +277,10 @@
       showBtn.hidden = !c;
       hint.textContent = !norm(inp.value) ? '' : c ? [c.person, [c.zip, c.city].filter(Boolean).join(' ')].filter(Boolean).join(' · ') : `„${norm(inp.value)}“ wird beim Speichern als neuer Kontakt angelegt.`;
     });
+    $('[data-new-contact-doc]', bd).onclick = () => {
+      const typed = norm(inp.value);
+      openContact(null, (nc) => { inp.value = nc.name; inp.dispatchEvent(new Event('input')); }, findContact(typed) ? '' : typed);
+    };
     showBtn.onclick = () => { const c = findContact(inp.value); if (c) openContact(c.id, () => { const n = contactById(c.id); if (n) inp.value = n.name; inp.dispatchEvent(new Event('input')); }); };
     const pick = $('[data-tag-pick]', bd);
     const drawPick = () => {
@@ -367,8 +372,8 @@
   }
 
   /* ---------- Kontakt anlegen und bearbeiten ---------- */
-  function openContact(id, onSaved) {
-    const c = id ? contactById(id) : { name: '', person: '', street: '', zip: '', city: '', phone: '', email: '', notes: '' };
+  function openContact(id, onSaved, prefill = '') {
+    const c = id ? contactById(id) : { name: prefill, person: '', street: '', zip: '', city: '', phone: '', email: '', notes: '' };
     if (!c) return;
     const n = id ? docsOf(id).length : 0;
     const f = (name, label, attrs = '') => `<div class="field"><label for="c-${name}">${label}</label><input id="c-${name}" name="${name}" value="${esc(c[name] || '')}" ${attrs}></div>`;
