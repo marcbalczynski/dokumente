@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dokumente</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link href="fonts/fonts.css" rel="stylesheet">
+<link href="app.css" rel="stylesheet">
+</head>
+<body>
+<header class="topbar">
+  <a href="/" class="portal-link" title="Zurück zum Portal">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="2" fill="currentColor"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2" fill="currentColor"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2" fill="currentColor"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2" fill="currentColor"/></svg>
+    <span>Portal</span></a>
+  <div class="brand"><img src="icon.svg" alt=""><span>Dokumente</span></div>
+  <div class="search"><input id="q" type="search" placeholder="Suchen … (Taste /)" aria-label="Dokumente durchsuchen"></div>
+  <label class="btn btn-primary upload">+ Hochladen<input id="file" type="file" multiple hidden></label>
+</header>
+
+<main class="wrap">
+  <div class="filters" id="filters"></div>
+  <div id="list"></div>
+  <p class="foot muted small">Ablage für private und allgemeine Dokumente – getrennt von der Management-App. Dateien liegen auf dem eigenen Server (App-Portal), höchstens 20 MB je Datei. Dateien zum Hochladen einfach ins Fenster ziehen.</p>
+</main>
+
+<div class="drop" id="drop" hidden><div>Dateien hier ablegen</div></div>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

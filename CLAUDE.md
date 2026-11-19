@@ -1,0 +1,41 @@
+# CLAUDE.md – Dokumente
+
+Hinweise für Claude Code. Diese Datei liegt im Repo, damit sie auf jedem Mac gilt.
+
+## Dokumente
+
+- **Zweck:** kleine Ablage für private und allgemeine Dokumente, die **nicht** zum Geschäft, zu den Geschäftszweigen oder zu den Finanzen gehören (die liegen in der Management-App). Bewusst minimal wie eine „Paperless lite“ – keine Texterkennung, keine Ordnerstruktur, keine Benutzerverwaltung.
+- **Aufbau:** reines HTML/CSS/JS ohne Build – `index.html`, `app.css`, `app.js`, `icon.svg`, Schriften lokal in `fonts/`. Läuft nur über das App-Portal (Kachel „Dokumente“, Ordner `dokumente`).
+- **Speicher (Portal):** Angaben in `/api/kv/dokumente/docs/<id>` (Titel, Datum, Absender, Schlagwörter, Notiz, Datei-Infos, `inbox`), Dateien in `/api/blob/dokumente/<id>` (höchstens 20 MB, Original unverändert). Die Dokument-ID ist die Datei-ID. Auf dem Server: `dokumente/data/db/docs.json` und `dokumente/data/blobs/`; im Container `/data/dokumente` (Datenordner auf dem NAS, mit Hyper Backup sichern). `data/` ist nicht im Git.
+- **Bedienung:** Hochladen per Knopf oder Ziehen ins Fenster → landet im **Eingang**; „Speichern & aus Eingang“ ordnet es ein. Suche über alle Angaben und den Dateinamen (Taste `/`), Filter nach Schlagwort, Absender, Jahr; Vorschau für PDF, Bilder, Text.
+- **Gestaltung:** wie die Management-App (Dunkelgrün, Creme, Kupfer, Archivo/Inter).
+- **Testen:** über das lokale Portal (`http://localhost:8080/dokumente/`); Testdokumente danach in der App löschen.
+
+## Gemeinsame Regeln (gelten für alle fünf Repos)
+
+**Projekt:** BALANDURB – Einzelunternehmen als Kleinunternehmer (§ 19 UStG), Gewerbebeginn 01.01.2027, nebenberuflich, dauerhaft keine GmbH (daher EÜR, keine Bilanz). Geschäftszweige = Business Units. Bis 17.11.2026 hieß das Unternehmen BiaMar.
+
+Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac derselbe Pfad):
+- `management-app` – Verwaltung (Verkauf, Einkauf, Finanzen, EÜR, DATEV …), Browser-App mit SQLite (sql.js)
+- `portal` – App-Portal und Perl-Server, liefert Management-App, Gründungskonzept und Dokumente aus (die Website ist dort nur ein Weblink); Docker-Image für das NAS
+- `gruendung` – Gründungskonzept (eine HTML-Seite)
+- `website` – Landingpage www.balandurb.de (HTML/CSS, Hosting bei Strato, Vorschau `python3 -m http.server 8091 --bind 127.0.0.1` im Ordner)
+- `dokumente` – kleine Dokumentenablage für private und allgemeine Dokumente (ähnlich Paperless, minimal); Dateien und Angaben im Portal-Speicher (`/api/blob`, `/api/kv`)
+
+**Offene Erinnerungen** (beim Start einer Sitzung ansprechen, bis erledigt – dann hier löschen)
+- **Anderer Mac auf Token umstellen** (eingetragen 19.11.2026): Der zweite Mac meldet sich bei GitHub bisher über die Browser-Anmeldung von `gh` an. Er soll – wie dieser Mac – ein **Fine-grained Personal Access Token** nutzen: nur die fünf Repos (`management-app`, `portal`, `gruendung`, `website`, `dokumente`), Rechte „Contents: Read and write“, im macOS-Schlüsselbund gespeichert. Den Token erstellt und gibt der Nutzer selbst ein. Danach `gh auth logout` bzw. die alte Anmeldung entfernen und mit `git pull`/`git push` in allen fünf Repos prüfen.
+
+**Arbeitsweise**
+- Immer auf **Deutsch** antworten – auch Rückfragen, Zusammenfassungen und Statusmeldungen. Code-Kommentare und Commit-Nachrichten sind deutsch.
+- **Firmendaten nicht in App oder Code** (Name, Anschrift, Steuernummer, Bank …): Noch ist nichts endgültig. In Konzepttexten Platzhalter wie `[Vorname Nachname]` verwenden.
+- **Git-Identität:** immer `marcbalczynski <189748251+marcbalczynski@users.noreply.github.com>` – nie eine private E-Mail-Adresse in Commits. In zsh die `-c user.name=… -c user.email=…`-Angaben direkt an jeden git-Aufruf schreiben, nicht über eine Variable.
+- **Zwei Macs:** vor der Arbeit `git pull` in allen fünf Repos, danach committen und pushen. Commit und Push nur, wenn der Nutzer darum bittet oder es zum vereinbarten Ablauf gehört.
+- **Passwörter und Tokens** gibt der Nutzer selbst ein – nie selbst eintippen oder in Dateien schreiben.
+- **Sicherheit:** Das Portal läuft nur im eigenen Netz. HTTPS, starke Passwörter, weitere Zugangshärtung und verschlüsselte Sicherungen haben deshalb geringe Priorität (Roadmap Phase C) – nicht als dringend darstellen.
+- Auf dem NAS keine Konfigurationen anderer Stacks/Container lesen.
+
+**Lokal starten:** `cd ~/repository/portal && perl server.pl 8080` → http://localhost:8080 (macOS-Perl reicht, keine Zusatzmodule nötig). Lokal nur mit Testdaten arbeiten; die echten Daten liegen in der MariaDB auf dem NAS.
+
+**NAS (Synology, Portainer):** Portal unter `http://10.10.20.229:8080` (macvlan-Netz `mvl`). Image/Container/Stack `balandurb-portal`, Datenordner `/volume1/docker/balandurb-portal`, MariaDB-Datenbank `balandurb`, Benutzer `balandurb_app@localhost` über den Socket `/run/mysqld/mysqld10.sock`. Die MariaDB ist für die Management-App führend.
+- Update: `~/repository/portal/docker/build-context.sh` → `~/repository/docker-build/balandurb-portal-build.tar`; der Nutzer baut in Portainer das Image `balandurb-portal:latest` neu und erstellt den Container neu („Re-pull image“ aus).
+- Prüfen (das Portal hat keine Anmeldung): `curl -H "X-Portal: 1" http://10.10.20.229:8080/api/db/management-app/status` – ohne den Header `X-Portal: 1` lehnt das Portal API-Aufrufe ab.
