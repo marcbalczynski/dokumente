@@ -1,14 +1,15 @@
 /* Dokumente – kleine Ablage für allgemeine Dokumente (ähnlich Paperless, bewusst minimal)
  * Speicher: App-Portal, Datenordner dieser App auf dem eigenen Server
- *   Dokumente: /api/kv/dokumente/docs/<id>      (Titel, Datum, contactId = Absender, Schlagwörter, Notiz, Datei-Infos, Eingang)
+ *   Dokumente: /api/kv/dokumente/docs/<id>      (Titel, Datum, contactId = Absender, tagIds = Tags, Notiz, Datei-Infos, Eingang)
+ *   Tags:      /api/kv/dokumente/tags/<id>      (Name, Farbe) – vordefinierbar
  *   Kontakte:  /api/kv/dokumente/contacts/<id>  (Name, Ansprechpartner, Anschrift, Telefon, E-Mail, Notiz) – eigene Liste, getrennt vom ERP-System
  *   Dateien:   /api/blob/dokumente/<id>         (Original, höchstens 20 MB)
  * Die Dokument-ID ist die ID der Datei. Der Absender wird als Kontakt-ID gespeichert; frühere Freitext-Absender
- * (Feld „correspondent“) werden beim Laden einmalig in Kontakte übernommen. */
+ * (Feld „correspondent“) und Schlagwörter als Text (Feld „tags“) werden beim Laden einmalig in Kontakte bzw. Tags übernommen. */
 (function () {
   const APP = 'dokumente';
   const MAX = 20 * 1048576;
-  const st = { view: 'docs', docs: [], contacts: [], q: '', tag: '', contact: '', year: '', inbox: false };
+  const st = { view: 'docs', docs: [], contacts: [], tags: [], q: '', tag: '', contact: '', year: '', inbox: false };
   const $ = (s, r = document) => r.querySelector(s);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -49,26 +50,55 @@
     return nc;
   }
 
-  /* ---------- Laden (inkl. einmaliger Übernahme alter Freitext-Absender) ---------- */
+  /* ---------- Tags (Name + Farbe) ---------- */
+  const PALETTE = [['#1E3B33', 'Dunkelgrün'], ['#2F6B5B', 'Grün'], ['#7E9C62', 'Moos'], ['#B04A24', 'Kupfer'], ['#E07A52', 'Hellkupfer'], ['#C9A227', 'Gold'],
+    ['#2F5D8A', 'Blau'], ['#5C9CBF', 'Hellblau'], ['#6B4C8A', 'Violett'], ['#C62F3B', 'Rot'], ['#8A8A80', 'Grau'], ['#3B3A36', 'Anthrazit']];
+  const tagById = (id) => st.tags.find((t) => t.id === id) || null;
+  const findTag = (name) => { const k = norm(name).toLowerCase(); return k ? st.tags.find((t) => norm(t.name).toLowerCase() === k) || null : null; };
+  const docTags = (d) => (d.tagIds || []).map(tagById).filter(Boolean).sort((a, b) => coll(a.name, b.name));
+  const sortedTags = () => [...st.tags].sort((a, b) => coll(a.name, b.name));
+  const docsWithTag = (id) => st.docs.filter((d) => (d.tagIds || []).includes(id));
+  /* Schriftfarbe passend zur Hintergrundfarbe (hell oder dunkel) */
+  function onColor(hex) {
+    const h = (hex || '#8A8A80').replace('#', ''); const c = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2] > 0.35 ? '#1E2B27' : '#FFFFFF';
+  }
+  const tagStyle = (t) => `background:${esc(t.color)};border-color:${esc(t.color)};color:${onColor(t.color)}`;
+  const tagChip = (t) => `<span class="tag" style="${tagStyle(t)}">${esc(t.name)}</span>`;
+  async function ensureTag(name) {
+    name = norm(name); if (!name) return null;
+    const t = findTag(name); if (t) return t;
+    const nt = { id: 't' + newId().slice(1), name, color: PALETTE[st.tags.length % PALETTE.length][0], created: new Date().toISOString() };
+    await put('tags', nt); st.tags.push(nt);
+    return nt;
+  }
+
+  /* ---------- Laden (inkl. einmaliger Übernahme alter Freitext-Absender und Schlagwörter) ---------- */
   async function load() {
     try {
-      const [docs, contacts] = await Promise.all([api(`/api/kv/${APP}/docs`), api(`/api/kv/${APP}/contacts`)]);
+      const [docs, contacts, tags] = await Promise.all([api(`/api/kv/${APP}/docs`), api(`/api/kv/${APP}/contacts`), api(`/api/kv/${APP}/tags`)]);
       st.docs = docs.map((r) => ({ id: r.id, ...r.data }));
       st.contacts = contacts.map((r) => ({ id: r.id, ...r.data }));
+      st.tags = tags.map((r) => ({ id: r.id, ...r.data }));
     } catch (e) {
       $('#list').innerHTML = `<div class="card empty">Die Ablage ist nicht erreichbar: ${esc(e.message)}<br><span class="small">Die App muss über das App-Portal geöffnet werden.</span></div>`;
       return;
     }
-    const legacy = st.docs.filter((d) => d.correspondent != null);
+    const legacy = st.docs.filter((d) => d.correspondent != null || Array.isArray(d.tags));
     if (legacy.length) {
       try {
         for (const d of legacy) {
           const c = norm(d.correspondent) ? await ensureContact(d.correspondent) : null;
           if (c && !d.contactId) d.contactId = c.id;
           delete d.correspondent;
+          if (Array.isArray(d.tags)) {
+            const ids = new Set(d.tagIds || []);
+            for (const name of d.tags) { const t = await ensureTag(name); if (t) ids.add(t.id); }
+            d.tagIds = [...ids]; delete d.tags;
+          }
           await saveDoc(d);
         }
-      } catch (e) { toast('Absender konnten nicht in Kontakte übernommen werden: ' + e.message, 'err'); }
+      } catch (e) { toast('Alte Absender/Schlagwörter konnten nicht übernommen werden: ' + e.message, 'err'); }
     }
     render();
   }
@@ -86,7 +116,7 @@
         const doc = {
           id: r.id, title: f.name.replace(/\.[^.]+$/, '').replace(/[_]+/g, ' ').trim() || f.name,
           date: lm ? `${lm.getFullYear()}-${String(lm.getMonth() + 1).padStart(2, '0')}-${String(lm.getDate()).padStart(2, '0')}` : today(),
-          contactId: null, tags: [], notes: '', inbox: true,
+          contactId: null, tagIds: [], notes: '', inbox: true,
           file: { name: f.name, type: r.contentType || f.type, size: r.sizeBytes || f.size }, added: new Date().toISOString(),
         };
         await saveDoc(doc);
@@ -100,32 +130,30 @@
   /* ---------- Darstellung ---------- */
   function render() {
     $('#views').innerHTML = `<button class="view${st.view === 'docs' ? ' active' : ''}" data-view="docs">Dokumente <span class="n">${st.docs.length}</span></button>
-      <button class="view${st.view === 'contacts' ? ' active' : ''}" data-view="contacts">Kontakte <span class="n">${st.contacts.length}</span></button>`;
+      <button class="view${st.view === 'contacts' ? ' active' : ''}" data-view="contacts">Kontakte <span class="n">${st.contacts.length}</span></button>
+      <button class="view${st.view === 'tags' ? ' active' : ''}" data-view="tags">Tags <span class="n">${st.tags.length}</span></button>`;
     document.querySelectorAll('#views [data-view]').forEach((b) => b.onclick = () => { st.view = b.dataset.view; render(); });
-    $('#q').placeholder = st.view === 'docs' ? 'Dokumente suchen … (Taste /)' : 'Kontakte suchen … (Taste /)';
+    $('#q').placeholder = { docs: 'Dokumente suchen … (Taste /)', contacts: 'Kontakte suchen … (Taste /)', tags: 'Tags suchen … (Taste /)' }[st.view];
     $('.upload').hidden = st.view !== 'docs';
-    if (st.view === 'contacts') renderContacts(); else renderDocs();
+    if (st.view === 'contacts') renderContacts(); else if (st.view === 'tags') renderTags(); else renderDocs();
   }
 
   function filteredDocs() {
     const words = st.q.toLowerCase().split(/\s+/).filter(Boolean);
     return st.docs.filter((d) => {
       if (st.inbox && !d.inbox) return false;
-      if (st.tag && !(d.tags || []).includes(st.tag)) return false;
+      if (st.tag && !(d.tagIds || []).includes(st.tag)) return false;
       if (st.contact && d.contactId !== st.contact) return false;
       if (st.year && (d.date || '').slice(0, 4) !== st.year) return false;
       if (!words.length) return true;
-      const hay = [d.title, contactName(d), (d.tags || []).join(' '), d.notes, d.file && d.file.name, dateDE(d.date)].join(' ').toLowerCase();
+      const hay = [d.title, contactName(d), docTags(d).map((t) => t.name).join(' '), d.notes, d.file && d.file.name, dateDE(d.date)].join(' ').toLowerCase();
       return words.every((w) => hay.includes(w));
     }).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.added || '').localeCompare(a.added || ''));
   }
-  function tagCounts() {
-    const m = new Map();
-    st.docs.forEach((d) => (d.tags || []).forEach((v) => m.set(v, (m.get(v) || 0) + 1)));
-    return [...m.entries()].sort((a, b) => coll(a[0], b[0]));
-  }
+  /* Tags mit Dokumenten (für die Filterleiste) */
+  const usedTags = () => sortedTags().map((t) => [t, docsWithTag(t.id).length]).filter(([, n]) => n);
   function renderDocs() {
-    const tags = tagCounts();
+    const tags = usedTags();
     const used = st.contacts.filter((c) => docsOf(c.id).length).sort((a, b) => coll(a.name, b.name));
     const years = [...new Set(st.docs.map((d) => (d.date || '').slice(0, 4)).filter(Boolean))].sort().reverse();
     const inboxN = st.docs.filter((d) => d.inbox).length;
@@ -134,7 +162,7 @@
       <button class="chip${!st.inbox && !st.tag && !st.contact ? ' active' : ''}" data-all>Alle <span class="n">${st.docs.length}</span></button>
       <button class="chip${st.inbox ? ' active' : ''}" data-inbox>Eingang <span class="n">${inboxN}</span></button>
       ${tags.length ? '<span class="sep"></span>' : ''}
-      ${tags.map(([t, n]) => `<button class="chip${st.tag === t ? ' active' : ''}" data-tag="${esc(t)}">${esc(t)} <span class="n">${n}</span></button>`).join('')}
+      ${tags.map(([t, n]) => `<button class="chip tag-chip${st.tag === t.id ? ' active' : ''}" data-tag="${esc(t.id)}" style="--tag:${esc(t.color)};--tag-text:${onColor(t.color)}"><i aria-hidden="true"></i>${esc(t.name)} <span class="n">${n}</span></button>`).join('')}
       ${used.length || years.length > 1 ? '<span class="sep"></span>' : ''}
       ${used.length ? `<select data-contact aria-label="Absender"><option value="">Alle Absender</option>${used.map((c) => `<option value="${esc(c.id)}"${st.contact === c.id ? ' selected' : ''}>${esc(c.name)} (${docsOf(c.id).length})</option>`).join('')}</select>` : ''}
       ${years.length > 1 ? `<select data-year aria-label="Jahr"><option value="">Alle Jahre</option>${years.map((y) => `<option${st.year === y ? ' selected' : ''}>${y}</option>`).join('')}</select>` : ''}`;
@@ -142,10 +170,10 @@
     $('#list').innerHTML = !st.docs.length
       ? '<div class="card empty"><strong>Noch keine Dokumente.</strong><br>Über „+ Hochladen“ oder einfach Dateien ins Fenster ziehen.</div>'
       : !list.length ? '<div class="card empty">Keine Dokumente gefunden.</div>'
-      : `<div class="card"><table class="docs"><thead><tr><th>Datum</th><th>Titel</th><th class="col-corr">Absender</th><th class="col-tags">Schlagwörter</th><th class="r col-size">Größe</th></tr></thead><tbody>
+      : `<div class="card"><table class="docs"><thead><tr><th>Datum</th><th>Titel</th><th class="col-corr">Absender</th><th class="col-tags">Tags</th><th class="r col-size">Größe</th></tr></thead><tbody>
         ${list.map((d) => `<tr data-id="${esc(d.id)}"><td class="nowrap">${dateDE(d.date)}</td>
           <td class="doc-title"><span class="ext">${esc(ext(d.file && d.file.name) || 'datei')}</span>${esc(d.title)}${d.inbox ? '<span class="badge-new">Eingang</span>' : ''}</td>
-          <td class="col-corr">${esc(contactName(d))}</td><td class="col-tags">${(d.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</td>
+          <td class="col-corr">${esc(contactName(d))}</td><td class="col-tags">${docTags(d).map(tagChip).join('')}</td>
           <td class="r nowrap muted col-size">${d.file ? size(d.file.size) : ''}</td></tr>`).join('')}
         </tbody></table></div>`;
     $('#filters [data-all]').onclick = () => { Object.assign(st, { inbox: false, tag: '', contact: '', year: '' }); render(); };
@@ -174,15 +202,20 @@
     document.querySelectorAll('#list tr[data-cid]').forEach((tr) => tr.onclick = () => openContact(tr.dataset.cid));
   }
 
-  /* Schlagwörter: Komma-getrennt, ohne Doppelte (Groß/klein egal); vorhandene Schreibweise wird übernommen */
-  function normTags(text, known) {
-    const out = [];
-    text.split(',').map((t) => norm(t)).filter(Boolean).forEach((t) => {
-      const k = t.toLowerCase();
-      if (out.some((x) => x.toLowerCase() === k)) return;
-      out.push(known.find((x) => x.toLowerCase() === k) || t);
-    });
-    return out;
+  function renderTags() {
+    const words = st.q.toLowerCase().split(/\s+/).filter(Boolean);
+    const list = sortedTags().filter((t) => !words.length || words.every((w) => t.name.toLowerCase().includes(w)));
+    $('#filters').hidden = false;
+    $('#filters').innerHTML = '<button class="btn btn-primary btn-sm" data-new-tag>+ Tag</button><span class="muted small">Tags vordefinieren und farblich unterscheiden – im Dokument werden sie angetippt.</span>';
+    $('#list').innerHTML = !st.tags.length
+      ? '<div class="card empty"><strong>Noch keine Tags.</strong><br>Lege Tags hier vor oder direkt im Dokument an.</div>'
+      : !list.length ? '<div class="card empty">Keine Tags gefunden.</div>'
+      : `<div class="card"><table class="docs"><thead><tr><th>Tag</th><th>Farbe</th><th class="r">Dokumente</th></tr></thead><tbody>
+        ${list.map((t) => `<tr data-tid="${esc(t.id)}"><td>${tagChip(t)}</td><td class="muted small">${esc((PALETTE.find(([c]) => c.toLowerCase() === String(t.color).toLowerCase()) || [, t.color])[1])}</td>
+          <td class="r">${docsWithTag(t.id).length || '<span class="muted">–</span>'}</td></tr>`).join('')}
+        </tbody></table></div>`;
+    $('#filters [data-new-tag]').onclick = () => openTag(null);
+    document.querySelectorAll('#list tr[data-tid]').forEach((tr) => tr.onclick = () => openTag(tr.dataset.tid));
   }
 
   /* gemeinsamer Rahmen für Ansichten und Dialoge */
@@ -209,7 +242,7 @@
       : type.startsWith('image/') ? `<img src="${url}" alt="">`
       : type.startsWith('text/') ? `<iframe src="${url}" title="Vorschau"></iframe>`
       : `<div class="nopreview">Keine Vorschau für diesen Dateityp.<br><a class="btn" style="margin-top:12px" href="${url}" download="${esc(d.file ? d.file.name : '')}">Herunterladen</a></div>`;
-    const tagList = tagCounts().map(([t]) => t);
+    const sel = new Set((d.tagIds || []).filter(tagById));
     const names = [...st.contacts].sort((a, b) => coll(a.name, b.name));
     const { bd, close } = overlay(`<div class="viewer" role="dialog" aria-modal="true" aria-label="${esc(d.title)}">
       <div class="preview">${preview}</div>
@@ -223,7 +256,9 @@
               <button type="button" class="btn btn-sm" data-show-contact title="Kontakt öffnen"${d.contactId ? '' : ' hidden'}>Kontakt</button></div>
             <datalist id="contact-list">${names.map((c) => `<option value="${esc(c.name)}">${esc([c.person, c.city].filter(Boolean).join(' · '))}</option>`).join('')}</datalist>
             <div class="hint" data-contact-hint>${d.contactId ? '' : 'Ein neuer Name wird beim Speichern als Kontakt angelegt.'}</div></div>
-          <div class="field"><label for="f-tags">Schlagwörter</label><input id="f-tags" name="tags" value="${esc((d.tags || []).join(', '))}" list="tag-list" placeholder="z. B. Versicherung, Auto, Garantie"><datalist id="tag-list">${tagList.map((t) => `<option value="${esc(t)}">`).join('')}</datalist><div class="hint">mehrere mit Komma trennen</div></div>
+          <div class="field"><label>Tags</label><div class="tag-pick" data-tag-pick></div>
+            <div class="with-btn" style="margin-top:6px"><input name="newtag" placeholder="Neuer Tag …" aria-label="Neuer Tag" autocomplete="off"><button type="button" class="btn btn-sm" data-add-tag>+ Tag</button></div>
+            <div class="hint">Antippen zum Zuordnen; vordefinieren und Farben ändern unter „Tags“</div></div>
           <div class="field"><label for="f-notes">Notiz</label><textarea id="f-notes" name="notes">${esc(d.notes || '')}</textarea></div>
           <div class="file-info">${esc(d.file ? d.file.name : '')}${d.file ? ' · ' + size(d.file.size) : ''}<br>hochgeladen ${d.added ? new Date(d.added).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</div>
         </div>
@@ -242,6 +277,19 @@
       hint.textContent = !norm(inp.value) ? '' : c ? [c.person, [c.zip, c.city].filter(Boolean).join(' ')].filter(Boolean).join(' · ') : `„${norm(inp.value)}“ wird beim Speichern als neuer Kontakt angelegt.`;
     });
     showBtn.onclick = () => { const c = findContact(inp.value); if (c) openContact(c.id, () => { const n = contactById(c.id); if (n) inp.value = n.name; inp.dispatchEvent(new Event('input')); }); };
+    const pick = $('[data-tag-pick]', bd);
+    const drawPick = () => {
+      pick.innerHTML = sortedTags().map((t) => `<button type="button" class="tag tag-toggle${sel.has(t.id) ? ' on' : ''}" data-t="${esc(t.id)}" aria-pressed="${sel.has(t.id)}" style="${sel.has(t.id) ? tagStyle(t) : `--tag:${esc(t.color)}`}">${esc(t.name)}</button>`).join('')
+        || '<span class="muted small">Noch keine Tags – unten einen anlegen.</span>';
+      pick.querySelectorAll('[data-t]').forEach((b) => b.onclick = () => { const id = b.dataset.t; if (sel.has(id)) sel.delete(id); else sel.add(id); drawPick(); });
+    };
+    drawPick();
+    const addTag = async () => {
+      const inpT = $('[name=newtag]', bd); if (!norm(inpT.value)) return;
+      try { const t = await ensureTag(inpT.value); sel.add(t.id); inpT.value = ''; drawPick(); } catch (err) { toast(err.message, 'err'); }
+    };
+    $('[data-add-tag]', bd).onclick = addTag;
+    $('[name=newtag]', bd).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } });
     $('form', bd).onsubmit = async (e) => {
       e.preventDefault();
       const f = e.target;
@@ -249,7 +297,7 @@
         const known = findContact(f.contact.value);
         const c = norm(f.contact.value) ? known || await ensureContact(f.contact.value) : null;
         const next = { ...d, title: norm(f.title.value) || d.title, date: f.date.value || '', contactId: c ? c.id : null,
-          tags: normTags(f.tags.value, tagList), notes: f.notes.value.trim(), inbox: false };
+          tagIds: [...sel].filter(tagById), notes: f.notes.value.trim(), inbox: false };
         await saveDoc(next); Object.assign(d, next);
         toast(c && !known ? `Gespeichert – Kontakt „${c.name}“ angelegt` : 'Gespeichert', 'ok'); close(); render();
       } catch (err) { toast(err.message, 'err'); }
@@ -263,6 +311,59 @@
       } catch (err) { toast(err.message, 'err'); }
     };
     setTimeout(() => $('#f-title', bd).focus(), 50);
+  }
+
+  /* ---------- Tag anlegen und bearbeiten ---------- */
+  function openTag(id) {
+    const t = id ? tagById(id) : { name: '', color: PALETTE[st.tags.length % PALETTE.length][0] };
+    if (!t) return;
+    const n = id ? docsWithTag(id).length : 0;
+    let color = t.color;
+    const { bd, close } = overlay(`<form class="modal" role="dialog" aria-modal="true" aria-label="Tag">
+      <div class="meta-head"><h2>${id ? 'Tag' : 'Neuer Tag'}</h2><button type="button" class="icon-close" data-close aria-label="Schließen">×</button></div>
+      <div class="meta-body">
+        <div class="field"><label for="t-name">Name *</label><input id="t-name" name="name" value="${esc(t.name)}" required placeholder="z. B. Versicherung, Garantie, Auto"></div>
+        <div class="field"><label>Farbe</label><div class="swatches" role="radiogroup" aria-label="Farbe">${PALETTE.map(([c, l]) => `<button type="button" class="swatch" role="radio" data-c="${c}" title="${l}" aria-label="${l}" style="background:${c}"></button>`).join('')}</div></div>
+        <div class="field"><label>Vorschau</label><div data-preview></div></div>
+        ${id ? `<div class="file-info">${n ? `${n} Dokument${n === 1 ? '' : 'e'} mit diesem Tag` : 'Noch keinem Dokument zugeordnet'}</div>` : ''}
+      </div>
+      <div class="meta-foot">
+        ${id ? '<button type="button" class="btn btn-danger btn-sm" data-delete>Löschen</button>' : ''}
+        ${n ? '<button type="button" class="btn btn-sm" data-docs>Dokumente anzeigen</button>' : ''}
+        <div class="right"><button type="submit" class="btn btn-primary">Speichern</button></div>
+      </div></form>`, 'center');
+    const nameInp = $('#t-name', bd);
+    const draw = () => {
+      bd.querySelectorAll('.swatch').forEach((b) => { const on = b.dataset.c.toLowerCase() === String(color).toLowerCase(); b.classList.toggle('on', on); b.setAttribute('aria-checked', on); });
+      $('[data-preview]', bd).innerHTML = tagChip({ name: norm(nameInp.value) || 'Tag', color });
+    };
+    bd.querySelectorAll('.swatch').forEach((b) => b.onclick = () => { color = b.dataset.c; draw(); });
+    nameInp.addEventListener('input', draw);
+    draw();
+    $('form', bd).onsubmit = async (e) => {
+      e.preventDefault();
+      const name = norm(nameInp.value);
+      if (!name) { toast('Bitte einen Namen angeben.', 'err'); return; }
+      const dup = findTag(name);
+      if (dup && dup.id !== id) { toast(`Es gibt bereits den Tag „${dup.name}“.`, 'err'); return; }
+      const next = id ? { ...t, name, color, updated: new Date().toISOString() } : { id: 't' + newId().slice(1), name, color, created: new Date().toISOString() };
+      try { await put('tags', next); if (id) Object.assign(t, next); else st.tags.push(next); toast('Tag gespeichert', 'ok'); close(); render(); }
+      catch (err) { toast(err.message, 'err'); }
+    };
+    const delBtn = $('[data-delete]', bd);
+    if (delBtn) delBtn.onclick = async () => {
+      if (!window.confirm(n ? `Tag „${t.name}“ löschen? Er wird bei ${n} Dokument${n === 1 ? '' : 'en'} entfernt; die Dokumente bleiben erhalten.` : `Tag „${t.name}“ löschen?`)) return;
+      try {
+        for (const d of docsWithTag(id)) { d.tagIds = d.tagIds.filter((x) => x !== id); await saveDoc(d); }
+        await del('tags', id);
+        st.tags = st.tags.filter((x) => x.id !== id);
+        if (st.tag === id) st.tag = '';
+        toast('Tag gelöscht'); close(); render();
+      } catch (err) { toast(err.message, 'err'); }
+    };
+    const docsBtn = $('[data-docs]', bd);
+    if (docsBtn) docsBtn.onclick = () => { Object.assign(st, { view: 'docs', tag: id, contact: '', inbox: false, year: '', q: '' }); $('#q').value = ''; close(); render(); };
+    setTimeout(() => nameInp.focus(), 50);
   }
 
   /* ---------- Kontakt anlegen und bearbeiten ---------- */

@@ -119,3 +119,18 @@ table.docs tbody tr:hover td { background: var(--primary-soft); }
 .with-btn input { flex: 1; min-width: 0; }
 .with-btn .btn { height: 34px; }
 @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } .backdrop.center { padding: 0; } .modal { max-height: 100vh; border-radius: 0; } }
+
+/* Tags mit Farbe */
+.tag { border: 1px solid var(--border); }
+.chip.tag-chip i { width: 10px; height: 10px; border-radius: 50%; background: var(--tag); flex: none; }
+.chip.tag-chip.active { background: var(--tag); border-color: var(--tag); color: var(--tag-text, #fff); }
+.chip.tag-chip.active i { background: var(--tag-text, #fff); }
+.tag-pick { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-toggle { cursor: pointer; font: inherit; font-size: 12px; margin: 0; padding: 3px 10px; background: var(--surface); color: var(--text); border: 1px solid var(--tag, var(--border)); box-shadow: inset 3px 0 0 var(--tag, var(--border)); }
+.tag-toggle:hover { background: var(--surface-2); }
+.tag-toggle.on { box-shadow: none; font-weight: 600; }
+.tag-toggle.on::before { content: '✓ '; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+.swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; padding: 0; box-shadow: 0 0 0 1px var(--border); }
+.swatch:hover { transform: scale(1.08); }
+.swatch.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
