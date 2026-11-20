@@ -252,14 +252,16 @@
           <div class="field"><label for="f-title">Titel</label><input id="f-title" name="title" value="${esc(d.title)}" required></div>
           <div class="field"><label for="f-date">Datum</label><input id="f-date" name="date" type="date" value="${esc(d.date || '')}"></div>
           <div class="field"><label for="f-contact">Absender</label>
-            <div class="with-btn"><input id="f-contact" name="contact" value="${esc(contactName(d))}" list="contact-list" placeholder="Kontakt wählen oder neuen Namen eingeben" autocomplete="off">
-              <button type="button" class="btn btn-sm" data-show-contact title="Kontakt öffnen"${d.contactId ? '' : ' hidden'}>Öffnen</button>
-              <button type="button" class="btn btn-sm" data-new-contact-doc title="Neuen Kontakt anlegen">+ Kontakt</button></div>
+            <input id="f-contact" name="contact" value="${esc(contactName(d))}" list="contact-list" placeholder="Kontakt wählen oder neuen Namen eingeben" autocomplete="off">
             <datalist id="contact-list">${names.map((c) => `<option value="${esc(c.name)}">${esc([c.person, c.city].filter(Boolean).join(' · '))}</option>`).join('')}</datalist>
-            <div class="hint" data-contact-hint>${d.contactId ? '' : 'Ein neuer Name wird beim Speichern als Kontakt angelegt.'}</div></div>
+            <div class="hint" data-contact-hint>${d.contactId ? '' : 'Ein neuer Name wird beim Speichern als Kontakt angelegt.'}</div>
+            <div class="field-actions">
+              <button type="button" class="btn btn-sm" data-show-contact title="Gewählten Kontakt bearbeiten"${d.contactId ? '' : ' hidden'}>Bearbeiten</button>
+              <button type="button" class="btn btn-sm" data-new-contact-doc title="Neuen Kontakt anlegen">+ Kontakt</button></div></div>
           <div class="field"><label>Tags</label><div class="tag-pick" data-tag-pick></div>
-            <div class="with-btn" style="margin-top:6px"><input name="newtag" placeholder="Neuer Tag …" aria-label="Neuer Tag" autocomplete="off"><button type="button" class="btn btn-sm" data-add-tag>+ Tag</button></div>
-            <div class="hint">Antippen zum Zuordnen; vordefinieren und Farben ändern unter „Tags“</div></div>
+            <input name="newtag" placeholder="Neuer Tag …" aria-label="Neuer Tag" autocomplete="off" style="margin-top:8px">
+            <div class="hint">Antippen zum Zuordnen; vordefinieren und Farben ändern unter „Tags“</div>
+            <div class="field-actions"><button type="button" class="btn btn-sm" data-add-tag title="Neuen Tag anlegen">+ Tag</button></div></div>
           <div class="field"><label for="f-notes">Notiz</label><textarea id="f-notes" name="notes">${esc(d.notes || '')}</textarea></div>
           <div class="file-info">${esc(d.file ? d.file.name : '')}${d.file ? ' · ' + size(d.file.size) : ''}<br>hochgeladen ${d.added ? new Date(d.added).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</div>
         </div>
