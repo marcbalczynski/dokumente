@@ -37,6 +37,7 @@ Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac d
 - **Passwörter und Tokens** gibt der Nutzer selbst ein – nie selbst eintippen oder in Dateien schreiben.
 - **Sicherheit:** Das Portal läuft nur im eigenen Netz. HTTPS, starke Passwörter, weitere Zugangshärtung und verschlüsselte Sicherungen haben deshalb geringe Priorität (Roadmap Phase C) – nicht als dringend darstellen.
 - Auf dem NAS keine Konfigurationen anderer Stacks/Container lesen.
+- **Keine Geschäftsdaten an Anthropic** (Entscheidung 23.11.2026): Daten aus ERP-System und Portal nicht an Claude/Anthropic übertragen – die MCP-Schnittstelle (`portal/Mcp.pm`) bleibt abgeschaltet, KI-Funktionen nur lokal. Beim Entwickeln und Testen nur Testdaten verwenden.
 
 **Lokal starten:** `cd ~/repository/portal && perl server.pl 8080` → http://localhost:8080 (macOS-Perl reicht, keine Zusatzmodule nötig). Lokal nur mit Testdaten arbeiten; die echten Daten liegen in der MariaDB auf dem NAS.
 
