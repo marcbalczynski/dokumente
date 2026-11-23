@@ -31,7 +31,7 @@ Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac d
 
 **Arbeitsweise**
 - Immer auf **Deutsch** antworten – auch Rückfragen, Zusammenfassungen und Statusmeldungen. Code-Kommentare und Commit-Nachrichten sind deutsch.
-- **Firmendaten nicht in App oder Code** (Name, Anschrift, Steuernummer, Bank …): Noch ist nichts endgültig. In Konzepttexten Platzhalter wie `[Vorname Nachname]` verwenden.
+- **Firmendaten nicht in App oder Code** (Name, Anschrift, Steuernummer, Bank …): Noch ist nichts endgültig. In Konzepttexten Platzhalter wie `[Vorname Nachname]` verwenden. Ausnahmen auf Wunsch des Nutzers: Impressum/Datenschutz der Website und der Name der GbR in den Kopfzeilen von ERP-System (Vorgabe, wenn kein Firmenname eingetragen ist) und Portal (Unterbezeichnung, im Portal änderbar) – seit 23.11.2026.
 - **Git-Identität:** immer `marcbalczynski <189748251+marcbalczynski@users.noreply.github.com>` – nie eine private E-Mail-Adresse in Commits. In zsh die `-c user.name=… -c user.email=…`-Angaben direkt an jeden git-Aufruf schreiben, nicht über eine Variable.
 - **Zwei Macs:** vor der Arbeit `git pull` in allen fünf Repos, danach committen und pushen. Commit und Push nur, wenn der Nutzer darum bittet oder es zum vereinbarten Ablauf gehört.
 - **Passwörter und Tokens** gibt der Nutzer selbst ein – nie selbst eintippen oder in Dateien schreiben.
