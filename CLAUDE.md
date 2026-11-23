@@ -15,7 +15,7 @@ Hinweise für Claude Code. Diese Datei liegt im Repo, damit sie auf jedem Mac gi
 
 ## Gemeinsame Regeln (gelten für alle fünf Repos)
 
-**Projekt:** BALANDURB – Einzelunternehmen als Kleinunternehmer (§ 19 UStG), Gewerbebeginn 01.01.2027, nebenberuflich, dauerhaft keine GmbH (daher EÜR, keine Bilanz). Geschäftszweige = Business Units. Bis 17.11.2026 hieß das Unternehmen BiaMar.
+**Projekt:** BALANDURB – seit 23.11.2026 als **GbR** geplant (Marc Balczynski und Bianca Urban GbR, zwei Gesellschafter, Sitz Herne, ohne Eintragung ins Handels- oder Gesellschaftsregister; bis 22.11.2026 Einzelunternehmen), Kleinunternehmer (§ 19 UStG), Gewerbebeginn 01.01.2027, für beide Gesellschafter nebenberuflich, keine GmbH (daher EÜR der GbR mit Gewinnverteilung, keine Bilanz). Geschäftszweige = Business Units. Bis 17.11.2026 hieß das Unternehmen BiaMar.
 
 Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac derselbe Pfad):
 - `erp-system` – **ERP-System** (bis 19.11.2026 „Management-App“, Ordner/Repo `management-app`): Verkauf, Einkauf, Finanzen, EÜR, DATEV …, Browser-App mit SQLite (sql.js); Adresse im Portal `/erp-system/`
