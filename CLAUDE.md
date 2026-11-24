@@ -35,7 +35,7 @@ Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac d
 - **Git-Identität:** immer `marcbalczynski <189748251+marcbalczynski@users.noreply.github.com>` – nie eine private E-Mail-Adresse in Commits. In zsh die `-c user.name=… -c user.email=…`-Angaben direkt an jeden git-Aufruf schreiben, nicht über eine Variable.
 - **Zwei Macs:** vor der Arbeit `git pull` in allen fünf Repos, danach committen und pushen. Commit und Push nur, wenn der Nutzer darum bittet oder es zum vereinbarten Ablauf gehört.
 - **Passwörter und Tokens** gibt der Nutzer selbst ein – nie selbst eintippen oder in Dateien schreiben.
-- **Sicherheit:** Das Portal läuft nur im eigenen Netz. Starke Passwörter, weitere Zugangshärtung und verschlüsselte Sicherungen haben deshalb geringe Priorität (Roadmap Phase C) – nicht als dringend darstellen. HTTPS ist seit 24.11.2026 im Portal eingebaut und per `PORTAL_TLS=1` einschaltbar (`portal/docker/README.md` › HTTPS).
+- **Sicherheit:** Das Portal läuft nur im eigenen Netz. Verschlüsselte Sicherungen haben deshalb geringe Priorität (Roadmap Phase C) – nicht als dringend darstellen. Seit 24.11.2026 im Portal eingebaut: HTTPS (`PORTAL_TLS=1`, auf dem NAS aktiv) und Anmeldung am Portal (`PORTAL_AUTH=1`, `portal/Auth.pm`) – beides in `portal/docker/README.md`.
 - Auf dem NAS keine Konfigurationen anderer Stacks/Container lesen.
 - **Keine Geschäftsdaten an Anthropic** (Entscheidung 23.11.2026): Daten aus ERP-System und Portal nicht an Claude/Anthropic übertragen – die MCP-Schnittstelle (`portal/Mcp.pm`) bleibt abgeschaltet, KI-Funktionen nur lokal. Beim Entwickeln und Testen nur Testdaten verwenden.
 
@@ -43,4 +43,4 @@ Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac d
 
 **NAS (Synology, Portainer):** Portal unter `https://10.10.20.229:8443` (seit 24.11.2026 HTTPS mit `PORTAL_TLS=1`, `http://…:8080` leitet um; macvlan-Netz `mvl`). Image/Container/Stack `balandurb-portal`, Datenordner `/volume1/docker/balandurb-portal`, MariaDB-Datenbank `balandurb`, Benutzer `balandurb_app@localhost` über den Socket `/run/mysqld/mysqld10.sock`. Die MariaDB ist für das ERP-System führend.
 - Update: `~/repository/portal/docker/build-context.sh` → `~/repository/docker-build/balandurb-portal-build.tar`; der Nutzer baut in Portainer das Image `balandurb-portal:latest` neu und erstellt den Container neu („Re-pull image“ aus).
-- Prüfen (das Portal hat keine Anmeldung): `curl --cacert <portal-ca.crt> -H "X-Portal: 1" https://10.10.20.229:8443/api/db/erp-system/status` (Zertifikat unter `http://10.10.20.229:8080/ca.crt`) – ohne den Header `X-Portal: 1` lehnt das Portal API-Aufrufe ab.
+- Prüfen (ohne `PORTAL_AUTH`; mit Anmeldung braucht der Aufruf ein Sitzungs-Cookie): `curl --cacert <portal-ca.crt> -H "X-Portal: 1" https://10.10.20.229:8443/api/db/erp-system/status` (Zertifikat unter `http://10.10.20.229:8080/ca.crt`) – ohne den Header `X-Portal: 1` lehnt das Portal API-Aufrufe ab.

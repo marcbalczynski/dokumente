@@ -28,6 +28,7 @@
   async function api(path, opts = {}) {
     const res = await fetch(path, { ...opts, headers: { 'X-Portal': '1', ...(opts.headers || {}) } });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401 && data.login) location.href = '/login.html?next=' + encodeURIComponent(location.pathname + location.search + location.hash); // Portal-Anmeldung abgelaufen
     if (!res.ok) throw new Error(data.error || `Fehler ${res.status}`);
     return data;
   }
