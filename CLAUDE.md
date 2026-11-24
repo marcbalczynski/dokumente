@@ -35,7 +35,7 @@ Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac d
 - **Git-Identität:** immer `marcbalczynski <189748251+marcbalczynski@users.noreply.github.com>` – nie eine private E-Mail-Adresse in Commits. In zsh die `-c user.name=… -c user.email=…`-Angaben direkt an jeden git-Aufruf schreiben, nicht über eine Variable.
 - **Zwei Macs:** vor der Arbeit `git pull` in allen fünf Repos, danach committen und pushen. Commit und Push nur, wenn der Nutzer darum bittet oder es zum vereinbarten Ablauf gehört.
 - **Passwörter und Tokens** gibt der Nutzer selbst ein – nie selbst eintippen oder in Dateien schreiben.
-- **Sicherheit:** Das Portal läuft nur im eigenen Netz. HTTPS, starke Passwörter, weitere Zugangshärtung und verschlüsselte Sicherungen haben deshalb geringe Priorität (Roadmap Phase C) – nicht als dringend darstellen.
+- **Sicherheit:** Das Portal läuft nur im eigenen Netz. Starke Passwörter, weitere Zugangshärtung und verschlüsselte Sicherungen haben deshalb geringe Priorität (Roadmap Phase C) – nicht als dringend darstellen. HTTPS ist seit 24.11.2026 im Portal eingebaut und per `PORTAL_TLS=1` einschaltbar (`portal/docker/README.md` › HTTPS).
 - Auf dem NAS keine Konfigurationen anderer Stacks/Container lesen.
 - **Keine Geschäftsdaten an Anthropic** (Entscheidung 23.11.2026): Daten aus ERP-System und Portal nicht an Claude/Anthropic übertragen – die MCP-Schnittstelle (`portal/Mcp.pm`) bleibt abgeschaltet, KI-Funktionen nur lokal. Beim Entwickeln und Testen nur Testdaten verwenden.
 
