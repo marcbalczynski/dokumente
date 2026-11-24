@@ -41,6 +41,6 @@ Die fünf privaten Repos liegen nebeneinander in `~/repository` (auf jedem Mac d
 
 **Lokal starten:** `cd ~/repository/portal && perl server.pl 8080` → http://localhost:8080 (macOS-Perl reicht, keine Zusatzmodule nötig). Lokal nur mit Testdaten arbeiten; die echten Daten liegen in der MariaDB auf dem NAS.
 
-**NAS (Synology, Portainer):** Portal unter `http://10.10.20.229:8080` (macvlan-Netz `mvl`). Image/Container/Stack `balandurb-portal`, Datenordner `/volume1/docker/balandurb-portal`, MariaDB-Datenbank `balandurb`, Benutzer `balandurb_app@localhost` über den Socket `/run/mysqld/mysqld10.sock`. Die MariaDB ist für das ERP-System führend.
+**NAS (Synology, Portainer):** Portal unter `https://10.10.20.229:8443` (seit 24.11.2026 HTTPS mit `PORTAL_TLS=1`, `http://…:8080` leitet um; macvlan-Netz `mvl`). Image/Container/Stack `balandurb-portal`, Datenordner `/volume1/docker/balandurb-portal`, MariaDB-Datenbank `balandurb`, Benutzer `balandurb_app@localhost` über den Socket `/run/mysqld/mysqld10.sock`. Die MariaDB ist für das ERP-System führend.
 - Update: `~/repository/portal/docker/build-context.sh` → `~/repository/docker-build/balandurb-portal-build.tar`; der Nutzer baut in Portainer das Image `balandurb-portal:latest` neu und erstellt den Container neu („Re-pull image“ aus).
-- Prüfen (das Portal hat keine Anmeldung): `curl -H "X-Portal: 1" http://10.10.20.229:8080/api/db/erp-system/status` – ohne den Header `X-Portal: 1` lehnt das Portal API-Aufrufe ab.
+- Prüfen (das Portal hat keine Anmeldung): `curl --cacert <portal-ca.crt> -H "X-Portal: 1" https://10.10.20.229:8443/api/db/erp-system/status` (Zertifikat unter `http://10.10.20.229:8080/ca.crt`) – ohne den Header `X-Portal: 1` lehnt das Portal API-Aufrufe ab.
